@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: reachbox-db
+    environment:
+      POSTGRES_USER: reachbox
+      POSTGRES_PASSWORD: reachbox123
+      POSTGRES_DB: reachbox
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reachbox"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: reachbox-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: reachbox-backend
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      DATABASE_URL: postgresql://reachbox:reachbox123@db:5432/reachbox
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      ETHEREAL_USER: ${ETHEREAL_USER}
+      ETHEREAL_PASS: ${ETHEREAL_PASS}
+      WORKER_CONCURRENCY: 5
+      EMAIL_SEND_DELAY: 2000
+      MAX_EMAILS_PER_HOUR: 200
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    command: npm run dev
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: reachbox-frontend
+    environment:
+      REACT_APP_API_URL: http://localhost:4000
+      REACT_APP_GOOGLE_CLIENT_ID: ${REACT_APP_GOOGLE_CLIENT_ID}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+
+volumes:
+  db_data:
+  redis_data:

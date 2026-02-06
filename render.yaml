@@ -1,0 +1,49 @@
+# Render Deployment Config
+# This file tells Render how to deploy your backend
+
+services:
+  - type: web
+    name: reachbox-backend
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: cd backend && npm install && npx prisma generate
+    startCommand: cd backend && npx prisma db push --accept-data-loss && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: reachbox-db
+          property: connectionString
+      - key: REDIS_HOST
+        fromService:
+          name: reachbox-redis
+          type: redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          name: reachbox-redis
+          type: redis
+          property: port
+      - key: ETHEREAL_USER
+        value: bynncp32ffsrs7yq@ethereal.email
+      - key: ETHEREAL_PASS
+        sync: false
+      - key: WORKER_CONCURRENCY
+        value: 5
+      - key: EMAIL_SEND_DELAY
+        value: 2000
+      - key: MAX_EMAILS_PER_HOUR
+        value: 200
+
+databases:
+  - name: reachbox-db
+    databaseName: reachbox
+    user: reachbox
+    plan: free
+
+  - name: reachbox-redis
+    plan: free
