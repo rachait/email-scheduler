@@ -59,7 +59,7 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/app
-    command: npm run dev
+    command: sh -c "npx prisma generate && npx prisma db push && npm run dev"
 
   # Frontend
   frontend:

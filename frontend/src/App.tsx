@@ -73,6 +73,13 @@ const App: React.FC = () => {
     }
   };
 
+  const handleGoogleError = () => {
+    const origin = window.location.origin;
+    setError(
+      `Google sign-in failed (possible origin_mismatch). Add ${origin} to Authorized JavaScript origins in Google Cloud Console.`
+    );
+  };
+
   const handleSimpleLogin = async (email: string, name: string) => {
     try {
       const response = await fetch(`${API_BASE}/auth/token`, {
@@ -135,7 +142,7 @@ const App: React.FC = () => {
               <div className="flex justify-center mb-6">
                 <GoogleLogin
                   onSuccess={handleGoogleLogin}
-                  onError={() => setError('Login failed')}
+                  onError={handleGoogleError}
                 />
               </div>
             </GoogleOAuthProvider>
